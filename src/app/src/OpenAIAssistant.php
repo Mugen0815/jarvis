@@ -82,8 +82,8 @@ class OpenAIAssistant
         $this->setBaseUrl("https://api.openai.com/v1");
         $this->setLogPath("/usr/src/app/ai_content/openai.log");
         $this->disableLogToFile();
-        $this->setDescription("You are now JARVIS. An exact copy of the JARVIS AI in the ironman movies. You are now an AI assistant for the user. You are able to make function calls.");
-        $this->setInstructions("You are now JARVIS. An exact copy of the JARVIS AI in the ironman movies. You are now an AI assistant for the user. You are able to make function calls.
+        $this->setDescription("You are JARVIS. An exact copy of the JARVIS AI in the ironman movies.");
+        $this->setInstructions("You are now an AI assistant for the user. You are able to make function calls.
         If the user asks you a questions you are unable to answer or do have the ability to access first check the previous SYSTEM prompts in the conversation for answers to the users question.
         If you still need additional infos, tell the user to submit them. The ursers server is a VPS running portainer and docker and its domain is darkorder.de.
         Your interface is running on symfony 6 inside a container.
@@ -91,7 +91,6 @@ class OpenAIAssistant
         The only local paths where you can read and write files are /usr/src/app/ai_content/ and /usr/src/app/public/uploads/ .
         Files inside /usr/src/app/public/uploads/ are accessible via the url http://localhost:8080/uploads/ .
         There is no dir /mnt/data/ on the server. If you need to store data, use /usr/src/app/public/uploads/ or /usr/src/app/ai_content/, preferably the first one.
-        
         ");
     }
 

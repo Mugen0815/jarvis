@@ -45,9 +45,6 @@ Jarvis allows for the easy addition of skills without requiring knowledge of the
 ## Quick-Start via Dockerhub
 - In shell (linux or wsl) run: `docker run -e APIKEY='yourapikey' -p 8080:80 mugen0815/jarvis`
 
-## Quick-Start via Dockerhub with con
-- In shell (linux or wsl) run: `docker run -e APIKEY='yourapikey' -p 8080:80 mugen0815/jarvis`
-
 ## ENV-VARS
 - APIKEY (OpenAI-API-key)
 - MODEL (defaults to gpt-3.5-turbo, can be set to other models, if available to you, like  gpt-4-1106-preview)
@@ -58,7 +55,6 @@ Jarvis allows for the easy addition of skills without requiring knowledge of the
 - PORTAINER_URL (eg https://portainer.mydomain.com or http://localhost:9000)
 - PORTAINER_USERNAME
 - PORTAINER_PASSWORD
-
 
 ## TODO
 - replace frontend with vuejs-version

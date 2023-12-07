@@ -33,6 +33,7 @@ RUN ls --recursive /usr/src/
 RUN chmod -R 777 /usr/src/app/public/uploads
 RUN chmod -R 777 /usr/src/app/ai_content
 RUN chmod -R 777 /usr/src/app/var
+RUN cd /usr/src/app && composer install
 
 
 ENTRYPOINT ["docker-entrypoint.sh"]

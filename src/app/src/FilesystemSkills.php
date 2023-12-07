@@ -21,8 +21,8 @@ class FilesystemSkills implements SkillsInterface
     public function __construct()
     {
         $this->aAllowedDirectories = array(
-            '/usr/src/app/ai_content/',
             '/usr/src/app/public/uploads/',
+            '/usr/src/app/ai_content/',
         );
     }
 
@@ -150,7 +150,11 @@ class FilesystemSkills implements SkillsInterface
             return 'dir already exists: ' . $dirname;
         }
 
-        mkdir($dirname, 0777);
+        try {
+            mkdir($dirname, 0777, true);
+        } catch (\Exception $e) {
+            return 'error creating dir: ' . $dirname;
+        }
 
         return $dirname;
     }
@@ -190,8 +194,6 @@ class FilesystemSkills implements SkillsInterface
         if (file_exists($filename)) {
             $file = file_get_contents($filename);
         } else {
-            #var_dump('/usr/src/app/ai_content/'.$filename);
-            #die();#var_dump();
             return "File not found: " . $filename;
         }
 
