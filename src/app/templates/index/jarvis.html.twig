@@ -1,0 +1,63 @@
+{# app/Resources/views/index/jarvis.html.twig #}
+{% extends 'base.html.twig' %}
+
+{% block title %}Jarvis 2.0{% endblock %}
+
+{% block stylesheets %}
+ <link rel="stylesheet" href="{{ asset('styles/app.css') }}">
+ <meta name="viewport" content="width=device-width, initial-scale=1">
+{% endblock %}
+
+{% block javascripts %}
+    {{ importmap() }}
+    
+{% endblock %}
+
+{% block body %}
+<section class="msger">
+
+  <header class="msger-header">
+    <div class="msger-header-title">
+        Jarvis offline
+    </div>
+    <div class="msger-header-options">
+        <span><i class="fas fa-cog"></i></span>
+        <button id="startbutton" type="submit"><img src="img/start.png" alt=""></button>
+    </div>
+    <div id="threads">
+        <form id="threadsform">
+        <div class="thread-controls">
+            <select id="list"></select>
+            <button id="create" type="submit" class="msger-create-btn button">Create</button>
+            <button id="delete" type="submit" class="msger-delete-btn button">Delete</button>
+        </div>
+        </form>
+    </div>
+  </header>
+
+  <main class="msger-chat">
+  </main>
+
+  <form class="msger-inputarea">
+  <input type="text" class="msger-input" placeholder="Enter your message...">
+    <button type="submit" class="msger-send-btn button">Send</button>
+  </form>
+
+
+  <div class="hidden" id="template">
+    <div class="msg {$side}-msg">
+      <div class="msg-img" style="background-image: url({$img})"></div>
+      <div class="msg-bubble">
+        <div class="msg-info">
+          <div class="msg-info-name">{$name}</div>
+          <div class="msg-info-time">{$time}</div>
+        </div>
+        <div class="msg-text">{$text}</div>
+      </div>
+    </div>
+  </div>
+
+</section>
+
+  {% block content %}{% endblock %}
+{% endblock %}

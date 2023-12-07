@@ -1,0 +1,6 @@
+!.gitkeep
+.github/
+src/app/var/**
+.env.local
+!**.gitignore
+.git

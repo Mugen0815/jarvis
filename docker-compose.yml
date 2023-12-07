@@ -1,0 +1,30 @@
+version: '3.7'
+
+services:
+    php-apache:
+        build:
+            context: .
+        environment:
+            APIKEY: ${APIKEY}
+            MODEL: ${MODEL}
+            MAIL_HOST: ${MAIL_HOST}
+            MAIL_PORT: ${MAIL_PORT}
+            MAIL_FROM: ${MAIL_FROM}
+            MAIL_USERNAME: ${MAIL_USERNAME}
+            MAIL_PASSWORD: ${MAIL_PASSWORD}
+            PORTAINER_URL: ${PORTAINER_URL}
+            PORTAINER_USERNAME: ${PORTAINER_USERNAME}
+            PORTAINER_PASSWORD: ${PORTAINER_PASSWORD}
+        volumes:
+            - type: volume
+              source: ai_content
+              target: /usr/src/app/ai_content
+            - type: volume
+              source: uploads
+              target: /usr/src/app/public/uploads
+
+        ports:
+            - '8080:80'
+volumes:
+    ai_content:
+    uploads:
