@@ -72,6 +72,7 @@ class DalleSkills implements SkillsInterface
                 'parameters' => array(
                     array('prompt', 'string', 'prompt for image generation'),
                     array('filepath', 'string', 'filepath to save image locally'),
+                    array('size', 'string', 'size of the image in pixels. must be 1024x1024, 1024x1792 or 1792x1024'),
                     array('result', 'string', 'url with original image on dalle-site if success, else error message'),
                 ),
                 'required' => array('prompt', 'filepath'),
@@ -84,7 +85,6 @@ class DalleSkills implements SkillsInterface
         $obj->parameters = new \stdClass();
         $obj->parameters->type = 'object';
         $obj->parameters->properties = new \stdClass();
-        #var_dump($aFunctions[$sFncName]['parameters']);die();
         foreach ($aFunctions[$sFncName]['parameters'] as $aParam) {
             $obj->parameters->properties->{$aParam[0]} = new \stdClass();
             $obj->parameters->properties->{$aParam[0]}->type = $aParam[1];
@@ -108,6 +108,16 @@ class DalleSkills implements SkillsInterface
     {
         $aReturn = array();
 
+        $aAllowedSizes = array(
+            '1024x1024',
+            '1024x1792',
+            '1792x1024',
+        );
+
+        if(!in_array($array['size'], $aAllowedSizes)) {
+            return json_encode('Error: size must be on of ' . implode(', ', $aAllowedSizes) . '.');
+        }
+
         $sLog = date('Y-m-d H:i:s') . ' - ' . $array['prompt'] . ' - ' . $array['filepath'];
         file_put_contents("/usr/src/app/ai_content/log_dalle.log", PHP_EOL . $sLog . PHP_EOL, FILE_APPEND);
         $endpoint = 'https://api.openai.com/v1/images/generations';
@@ -115,7 +125,7 @@ class DalleSkills implements SkillsInterface
         "model": "dall-e-3",
         "prompt": "' . $array['prompt'] . '",
         "n": 1,
-        "size": "1024x1024"
+        "size": '.$array['size'].'
       }';
 
         $ch = curl_init();
@@ -148,11 +158,9 @@ class DalleSkills implements SkillsInterface
             $aReturn[1] = "Error: " . $response;
         }
 
-        file_put_contents("/usr/src/app/ai_content/log_dalle.log", PHP_EOL . 'URL:' . $url . PHP_EOL, FILE_APPEND);
 
         $sImageContent = $this->download_image($url);
         $sFilepath = $this->sanitizePath($array['filepath']);
-        file_put_contents("/usr/src/app/ai_content/log_dalle.log", PHP_EOL . 'PATH:' . $sFilepath . PHP_EOL, FILE_APPEND);
         if (file_put_contents($sFilepath, $sImageContent, FILE_APPEND)) {
             $aReturn[0] = $sFilepath;
         } else {
