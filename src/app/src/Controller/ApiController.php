@@ -18,9 +18,13 @@ use Mugen0815\OpenAIAssistant\MailSkills;
 
 /**
  * Class ApiController
+ * 
+ * This class is responsible for handling requests related to the API.
+ * It extends the AbstractController class.
+ * 
  * @package App\Controller
  */
-class ApiController extends AbstractController
+ class ApiController extends AbstractController
 {
     #[Route('/api')]
     public function index(): Response

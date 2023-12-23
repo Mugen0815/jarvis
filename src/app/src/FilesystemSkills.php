@@ -89,9 +89,10 @@ class FilesystemSkills implements SkillsInterface
             'save_local_file' => array(
                 'description' => 'save content to file at $path',
                 'parameters' => array(
-                    array('path', 'string', 'filepath to save file'),
+                    array('path', 'string', 'full filepath to save file'),
                     array('content', 'string', 'content for file'),
-                    array('result', 'string', 'filesize of saved file'),
+                    array('size', 'string', 'filesize of saved file'),
+                    array('fullpath', 'string', 'full filepath to save file'),
                 ),
                 'required' => array('path', 'content'),
             ),
@@ -131,6 +132,8 @@ class FilesystemSkills implements SkillsInterface
         $filepath = $this->sanitizePath($array['path']);
         $content = str_replace('\n', PHP_EOL, $array['content']);
         $result = file_put_contents($filepath, $content);
+
+        file_put_contents("/usr/src/app/ai_content/log_file.log", PHP_EOL . date('Y-m-d H:i:s') . ' - ' . $filepath . ' - ' . $result . ' - ' . filesize($filepath) . PHP_EOL, FILE_APPEND);
 
         return filesize($filepath);
     }

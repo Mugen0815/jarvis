@@ -113,20 +113,25 @@ class DalleSkills implements SkillsInterface
             '1024x1792',
             '1792x1024',
         );
+        if(!isset($array['size'])) {
+            $array['size'] = '1024x1024';
+        }
 
         if(!in_array($array['size'], $aAllowedSizes)) {
             return json_encode('Error: size must be on of ' . implode(', ', $aAllowedSizes) . '.');
         }
 
         $sLog = date('Y-m-d H:i:s') . ' - ' . $array['prompt'] . ' - ' . $array['filepath'];
-        file_put_contents("/usr/src/app/ai_content/log_dalle.log", PHP_EOL . $sLog . PHP_EOL, FILE_APPEND);
+        //file_put_contents("/usr/src/app/ai_content/log_dalle.log", PHP_EOL . $sLog . PHP_EOL, FILE_APPEND);
         $endpoint = 'https://api.openai.com/v1/images/generations';
         $json_data = '{
         "model": "dall-e-3",
         "prompt": "' . $array['prompt'] . '",
         "n": 1,
-        "size": '.$array['size'].'
+        "size": "'.$array['size'].'"
       }';
+
+        //file_put_contents("/usr/src/app/ai_content/log_dalle.log", PHP_EOL . $json_data . PHP_EOL, FILE_APPEND);
 
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $endpoint);
@@ -166,7 +171,8 @@ class DalleSkills implements SkillsInterface
         } else {
             $aReturn[0] = 'Error: could not save image to ' . $sFilepath;
         }
-
+        //file_put_contents("/usr/src/app/ai_content/log_dalle.log", PHP_EOL . json_encode($aReturn) . PHP_EOL, FILE_APPEND);
+        
         return json_encode($aReturn);
     }
 

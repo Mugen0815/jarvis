@@ -5,6 +5,10 @@ if [[ "$1" == apache2* ]] || [ "$1" = 'php-fpm' ]; then
             echo "INSTALLING DEPENDENCIES with composer install"
             cd /usr/src/app && composer install
         fi    
+        if [ ! -e /usr/src/app/node_modules ]; then
+            echo "INSTALLING DEPENDENCIES with yarn install"
+            cd /usr/src/app && yarn install
+        fi    
         echo "SETTING APIKEY= $APIKEY"
         export APIKEY=$APIKEY
         echo "SETTING MODEL= $MODEL"
@@ -17,6 +21,7 @@ if [[ "$1" == apache2* ]] || [ "$1" = 'php-fpm' ]; then
         export MAIL_USERNAME=$MAIL_USERNAME
         export MAIL_PASSWORD=$MAIL_PASSWORD
         export MAIL_FROM=$MAIL_FROM
+        cd /usr/src/app && yarn encore production
 fi
 
 echo "STARTING APACHE"

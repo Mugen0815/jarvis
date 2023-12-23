@@ -1,7 +1,7 @@
 <?php
 
 /**
- * Returns the import map for this application.
+ * Returns the importmap for this application.
  *
  * - "path" is a path inside the asset mapper system. Use the
  *     "debug:asset-map" command to see the full list of paths.
@@ -17,5 +17,36 @@ return [
     'app' => [
         'path' => './assets/app.js',
         'entrypoint' => true,
+    ],
+    '@hotwired/stimulus' => [
+        'version' => '3.2.2',
+    ],
+    '@symfony/stimulus-bundle' => [
+        'path' => './vendor/symfony/stimulus-bundle/assets/dist/loader.js',
+    ],
+    'vue' => [
+        'version' => '3.3.11',
+        'package_specifier' => 'vue/dist/vue.esm-bundler.js',
+    ],
+    '@vue/runtime-dom' => [
+        'version' => '3.3.11',
+    ],
+    '@vue/compiler-dom' => [
+        'version' => '3.3.11',
+    ],
+    '@vue/shared' => [
+        'version' => '3.3.11',
+    ],
+    '@vue/runtime-core' => [
+        'version' => '3.3.11',
+    ],
+    '@vue/compiler-core' => [
+        'version' => '3.3.11',
+    ],
+    '@vue/reactivity' => [
+        'version' => '3.3.11',
+    ],
+    '@symfony/ux-vue' => [
+        'path' => './vendor/symfony/ux-vue/assets/dist/loader.js',
     ],
 ];
