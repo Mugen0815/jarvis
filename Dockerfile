@@ -7,6 +7,9 @@ RUN apt update && apt install -y \
     unzip \
     curl \
     git \
+    nodejs \
+    npm \
+    && npm install --global yarn \ 
     && git config --global user.email "you@example.com" && git config --global user.name "Your Name" \
     && docker-php-ext-configure intl \
     && docker-php-ext-install intl \
@@ -34,7 +37,8 @@ RUN chmod -R 777 /usr/src/app/public/uploads
 RUN chmod -R 777 /usr/src/app/ai_content
 RUN chmod -R 777 /usr/src/app/var
 RUN cd /usr/src/app && composer install
-
+RUN cd /usr/src/app && npm install --global yarn
+RUN cd /usr/src/app && yarn install && yarn encore production
 
 ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["apache2-foreground"]
