@@ -281,7 +281,8 @@ use Doctrine\ORM\EntityManagerInterface;
     {
         $sApiKey          = getenv('APIKEY');
         $sModel           = getenv('MODEL');
-        $sAssistantId     = $this->getStoredAssistantId();
+        #$sAssistantId     = $this->getStoredAssistantId();
+        $sAssistantId     = 'local-llmacpp';
         $DefaultSkills    = new DefaultSkills();
         $sPortainerUser   = getenv('PORTAINER_USERNAME');
         $sPortainerPass   = getenv('PORTAINER_PASSWORD');
@@ -300,9 +301,9 @@ use Doctrine\ORM\EntityManagerInterface;
             $Assistant->setModel( $sModel );
         }
         if( '' === $sAssistantId ){ // no assistant ID stored yet in '/usr/src/app/ai_content/assistantId.txt', so create a new assistant and store the ID
-            $sResponse   = $Assistant->createAssistant();
-            $aResponse   = json_decode($sResponse,true);
-            $sAssistantId = $aResponse['id'];
+            #$sResponse   = $Assistant->createAssistant();
+            #$aResponse   = json_decode($sResponse,true);
+            #$sAssistantId = $aResponse['id'];
             $this->storeAssistantId( $sAssistantId );
         }
         $Assistant->setAssistantId( $sAssistantId );

@@ -25,7 +25,9 @@ if [[ "$1" == apache2* ]] || [ "$1" = 'php-fpm' ]; then
         export MAIL_USERNAME=$MAIL_USERNAME
         export MAIL_PASSWORD=$MAIL_PASSWORD
         export MAIL_FROM=$MAIL_FROM
-        cd /usr/src/app && yarn encore production
+        cd /usr/src/app && npm install -g yarn && yarn install && yarn encore production
+        #cd /usr/src/app && yarn encore production
+        cd /usr/src/app && chmod -R 777 ai_content
 fi
 
 echo "STARTING APACHE"
