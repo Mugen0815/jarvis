@@ -76,9 +76,10 @@ async function getMessages() {
     fetch(`/api/messages?thread=${activeThread.value}`)
     .then(response => response.json())
     .then(data => {
-        data.reverse();
+        //data.reverse();
         messages.value = [];
         data.forEach(message => {
+            console.log(message);
           messages.value.push(message);
       });
       scrollDownChat();
@@ -106,7 +107,19 @@ async function sendMessage() {
             
         success: function(data) {
             waitingForResponse.value = false;
-            getMessages();
+            //console.log(data);
+            //console.log(data.messages);
+            var data2 = JSON.parse(data);
+            //console.log(data2);
+            console.log(data2.choices[0].message.content);
+            messages.value.push(createTemporaryMessage(data2.choices[0].message.content, 'assistant'));
+            //getMessages();
+
+        },
+        error: function(data) {
+            waitingForResponse.value = false;
+            messages.value.push(createTemporaryMessage("Sorry, I'm offline right now", 'assistant'));
+            scrollDownChat();
         }
     });
 }
@@ -146,14 +159,7 @@ function setThread() {
 function createTemporaryMessage(text, role) {
     var message = {
         "role": role,
-        "content": [
-            {
-                "type": "text",
-                "text": {
-                    "value": text
-                }
-            }
-        ],
+        "content": text,
         "created_at": Math.floor(Date.now() / 1000)
     };
 

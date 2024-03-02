@@ -9,12 +9,13 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Psr\Log\LoggerInterface;
 use PHPMailer\PHPMailer\PHPMailer;
 use Mugen0815\OpenAIAssistant\OpenAIAssistant;
+use Mugen0815\OpenAIAssistant\LlamaCppAssistant;
 use Mugen0815\OpenAIAssistant\DefaultSkills;
 use Mugen0815\OpenAIAssistant\PortainerSkills;
 use Mugen0815\OpenAIAssistant\FilesystemSkills;
 use Mugen0815\OpenAIAssistant\DalleSkills;
 use Mugen0815\OpenAIAssistant\MailSkills;
-
+use Doctrine\ORM\EntityManagerInterface;
 
 /**
  * Class ApiController
@@ -26,6 +27,15 @@ use Mugen0815\OpenAIAssistant\MailSkills;
  */
  class ApiController extends AbstractController
 {
+
+    
+    public function __construct(EntityManagerInterface $em)
+    {
+        $this->_em = $em;
+        #parent::__construct($em);
+    }
+    
+
     #[Route('/api')]
     public function index(): Response
     {
@@ -62,6 +72,14 @@ use Mugen0815\OpenAIAssistant\MailSkills;
     {
         $sMessage = $request->request->get('message');
         $sThread  = $request->request->get('thread');
+        #var_dump($sMessage);
+        #var_dump($sThread);
+        #die();
+        if( is_null( $sMessage ) || is_null( $sThread )){
+            $sMessage = "Introduce yourself";
+            $sThread  = "egal";
+        }
+
         $app = $this->getAssistant();
         $response = $app->chat($sThread,$sMessage);
 
@@ -273,9 +291,10 @@ use Mugen0815\OpenAIAssistant\MailSkills;
         $DalleSkills      = new DalleSkills($sApiKey);
         $MailSkills       = new MailSkills( $this->getMailer() );
 
-        $Assistant = new OpenAIAssistant($sApiKey); // must be set in environment variable APIKEY
-        $Assistant->setSkills([$DefaultSkills,$PortainerSkills,$FilesystemSkills,$DalleSkills,$MailSkills]); // add own skills here
-        //$Assistant->enableLogToFile(); // optional, default is disabled
+        $Assistant = new LlamaCppAssistant($sApiKey); // must be set in environment variable APIKEY
+        #$Assistant = new OpenAIAssistant($sApiKey); // must be set in environment variable APIKEY
+        $Assistant->setSkills([$FilesystemSkills]); // add own skills here
+        $Assistant->enableLogToFile(); // optional, default is disabled
 
         if( false !== $sModel && '' !== $sModel){ 
             $Assistant->setModel( $sModel );
@@ -287,6 +306,7 @@ use Mugen0815\OpenAIAssistant\MailSkills;
             $this->storeAssistantId( $sAssistantId );
         }
         $Assistant->setAssistantId( $sAssistantId );
+        $Assistant->setEntityManager($this->_em);
 
         return $Assistant; // Assistant is now ready to use
     }

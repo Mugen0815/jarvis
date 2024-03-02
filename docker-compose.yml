@@ -1,6 +1,43 @@
 version: '3.7'
 
 services:
+    llama-cpp-python:
+        image: 3x3cut0r/llama-cpp-python:latest
+        container_name: llama-cpp-python-jarvis
+        cap_add:
+            - SYS_RESOURCE
+        environment:
+            MODEL_DOWNLOAD: "True" 
+            MODEL_REPO: "TheBloke/CodeLlama-7B-Instruct-GGUF" 
+            MODEL: "codellama-7b-instruct.Q4_K_M.gguf" 
+            MODEL_ALIAS: "codellama-7b-instruct" 
+            DEFAULT_MODEL: "codellama-7b-instruct.Q4_K_M.gguf" 
+            N_GPU_LAYERS : 32
+            N_CTX : 4096
+        volumes:
+            - ./model:/model
+        ports:
+            - '8000:8000'
+
+    mariadb:
+        image: mariadb:10.6.4-focal
+        volumes:
+            - type: volume
+              source: dbdata
+              target: /var/lib/mysql
+        environment:
+            TZ: 'Europe/Rome'
+            MYSQL_ALLOW_EMPTY_PASSWORD: 'no'
+            MYSQL_ROOT_PASSWORD: '${MYSQL_ROOT_PASSWORD}'
+            MYSQL_USER: '${MYSQL_USER}'
+            MYSQL_PASSWORD: '${MYSQL_PASSWORD}'
+            MYSQL_DATABASE: '${MYSQL_DATABASE}'
+    adminer:
+        image: adminer
+        restart: always
+        ports:
+        - 8081:8080
+
     php-apache:
         build:
             context: .
@@ -16,15 +53,17 @@ services:
             PORTAINER_USERNAME: ${PORTAINER_USERNAME}
             PORTAINER_PASSWORD: ${PORTAINER_PASSWORD}
         volumes:
-            - type: volume
-              source: ai_content
-              target: /usr/src/app/ai_content
-            - type: volume
-              source: uploads
-              target: /usr/src/app/public/uploads
+            #- type: bind
+            #  source: ai_content
+            #  target: /usr/src/app/ai_content
+            #- type: volume
+            #  source: uploads
+            #  target: /usr/src/app/public/uploads
+            - ./src/app:/usr/src/app
 
         ports:
             - '8080:80'
 volumes:
     ai_content:
     uploads:
+    dbdata:

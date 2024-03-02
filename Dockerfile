@@ -14,7 +14,8 @@ RUN apt update && apt install -y \
     && docker-php-ext-configure intl \
     && docker-php-ext-install intl \
     && docker-php-ext-install mbstring \
-    && docker-php-ext-install zip
+    && docker-php-ext-install zip \
+    && docker-php-ext-install pdo_mysql
 RUN docker-php-ext-enable intl mbstring zip
 
 COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer

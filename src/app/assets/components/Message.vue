@@ -11,7 +11,7 @@
                 {{ getTime(message) }}
             </div>
             </div>
-            <div class="msg-text" v-html="unescapeHtml(message.content[0].text.value)"></div>
+            <div class="msg-text" v-html="message.content"></div>
         </div>
       </div>
       <img v-if = "message.role!=='assistant'" :src="message.role=='assistant' ? 'img/jarvis.png' : 'img/usermic.png'" alt="" class="msg-img">

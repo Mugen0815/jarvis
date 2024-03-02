@@ -5,6 +5,9 @@
 
 [Dockerhub Repository](https://hub.docker.com/r/mugen0815/jarvis)
 
+
+# WOP pre-alpha of Jarvis with local LLM using llama.cpp and codellama
+
 ## Description
 Jarvis is a virtual assistant developed using the OpenAI API. It leverages the assistant feature to execute local function calls, known as "skills"", which will be executed locally, like Chat-GPT was accessing ur own API. Its focused on easy local code-execution for PHP-devs.
 
