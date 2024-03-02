@@ -30,6 +30,7 @@
         "vue-loader": "^16.7.0",
         "vue-router": "^4.0.14",
         "vue-template-compiler": "^2.6.14",
-        "vuefinder": "^1.2.8"
+        "vuefinder": "^1.2.8",
+        "yarn": "^1.22.21"
     }
 }

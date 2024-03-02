@@ -32,14 +32,14 @@ VOLUME /usr/src
 COPY ./docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-COPY src/ /usr/src/
-RUN ls --recursive /usr/src/
-RUN chmod -R 777 /usr/src/app/public/uploads
-RUN chmod -R 777 /usr/src/app/ai_content
-RUN chmod -R 777 /usr/src/app/var
-RUN cd /usr/src/app && composer install
-RUN cd /usr/src/app && npm install --global yarn
-RUN cd /usr/src/app && yarn install && yarn encore production
+#COPY src/ /usr/src/
+#RUN ls --recursive /usr/src/
+#RUN chmod -R 777 /usr/src/app/public/uploads
+#RUN chmod -R 777 /usr/src/app/ai_content
+#RUN chmod -R 777 /usr/src/app/var
+#RUN cd /usr/src/app && composer install
+#RUN cd /usr/src/app && npm install --global yarn
+#RUN cd /usr/src/app && yarn install && yarn encore production
 
 ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["apache2-foreground"]

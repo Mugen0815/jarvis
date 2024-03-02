@@ -67,3 +67,4 @@ volumes:
     ai_content:
     uploads:
     dbdata:
+

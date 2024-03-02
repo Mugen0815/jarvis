@@ -3,12 +3,16 @@
 if [[ "$1" == apache2* ]] || [ "$1" = 'php-fpm' ]; then
         if [ ! -e /usr/src/app/vendor ]; then
             echo "INSTALLING DEPENDENCIES with composer install"
-            cd /usr/src/app && composer install
-        fi    
+            
+        fi  
+
+        cd /usr/src/app && composer install && npm install
+
         if [ ! -e /usr/src/app/node_modules ]; then
             echo "INSTALLING DEPENDENCIES with yarn install"
-            cd /usr/src/app && yarn install
+            cd /usr/src/app && npm install -g yarn && yarn install && yarn encore production
         fi    
+        cd /usr/src/app && php bin/console doctrine:migrations:migrate --no-interaction
         echo "SETTING APIKEY= $APIKEY"
         export APIKEY=$APIKEY
         echo "SETTING MODEL= $MODEL"
