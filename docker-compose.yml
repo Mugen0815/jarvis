@@ -1,23 +1,46 @@
 version: '3.7'
 
 services:
-    llama-cpp-python:
-        image: 3x3cut0r/llama-cpp-python:latest
-        container_name: llama-cpp-python-jarvis
-        cap_add:
-            - SYS_RESOURCE
-        environment:
-            MODEL_DOWNLOAD: "True" 
-            MODEL_REPO: "TheBloke/CodeLlama-7B-Instruct-GGUF" 
-            MODEL: "codellama-7b-instruct.Q4_K_M.gguf" 
-            MODEL_ALIAS: "codellama-7b-instruct" 
-            DEFAULT_MODEL: "codellama-7b-instruct.Q4_K_M.gguf" 
-            N_GPU_LAYERS : 32
-            N_CTX : 4096
-        volumes:
-            - ./model:/model
+#    llama-cpp-python:
+#        image: 3x3cut0r/llama-cpp-python:latest
+#        container_name: llama-cpp-python-jarvis
+#        cap_add:
+#            - SYS_RESOURCE
+#        environment:
+#            MODEL_DOWNLOAD: "True" 
+#            MODEL_REPO: "cfahlgren1/natural-functions-GGUF" 
+#            MODEL: "natural-functions.Q6_K.gguf" 
+#            MODEL_ALIAS: "natural-functions" 
+#            DEFAULT_MODEL: "natural-functions.Q6_K.gguf" 
+#            N_GPU_LAYERS : 32
+#            N_CTX : 4096
+#        volumes:
+#            - ./model:/model
+#        ports:
+#            - '8000:8000'
+
+    ollama:
+        image: ollama/ollama
+        container_name: ollama
         ports:
-            - '8000:8000'
+        - 8085:11434
+        volumes:
+        - ./models:/root/.ollama/models
+        environment:
+            OLLAMA_ORIGINS: '*' 
+            #OLLAMA_HOST: "localhost:11434"
+            #OLLAMA_PORT: 11434  
+        deploy:
+            resources:
+                reservations:
+                    devices:
+                        - driver: nvidia
+                          #device_ids: ['0']
+                          count: 1
+                          capabilities: [gpu]
+        #command: "ollama pull calebfahlgren/natural-functions"                  
+        command: 
+            - "serve"
 
     mariadb:
         image: mariadb:10.6.4-focal
@@ -67,4 +90,5 @@ volumes:
     ai_content:
     uploads:
     dbdata:
+    ollama:
 

@@ -9,7 +9,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Psr\Log\LoggerInterface;
 use PHPMailer\PHPMailer\PHPMailer;
 use Mugen0815\OpenAIAssistant\OpenAIAssistant;
-use Mugen0815\OpenAIAssistant\LlamaCppAssistant;
+use Mugen0815\OpenAIAssistant\OllamaAssistant;
 use Mugen0815\OpenAIAssistant\DefaultSkills;
 use Mugen0815\OpenAIAssistant\PortainerSkills;
 use Mugen0815\OpenAIAssistant\FilesystemSkills;
@@ -292,7 +292,7 @@ use Doctrine\ORM\EntityManagerInterface;
         $DalleSkills      = new DalleSkills($sApiKey);
         $MailSkills       = new MailSkills( $this->getMailer() );
 
-        $Assistant = new LlamaCppAssistant($sApiKey); // must be set in environment variable APIKEY
+        $Assistant = new OllamaAssistant($sApiKey); // must be set in environment variable APIKEY
         #$Assistant = new OpenAIAssistant($sApiKey); // must be set in environment variable APIKEY
         $Assistant->setSkills([$FilesystemSkills]); // add own skills here
         $Assistant->enableLogToFile(); // optional, default is disabled
