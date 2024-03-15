@@ -19,7 +19,7 @@ use Doctrine\ORM\EntityManagerInterface;
  * 4.   $result = $this->chat($sMessage)
  * 
  */
-class OllamaAssistant
+class LangchainAssistant
 {
     /**
      * @var string The API key used for authentication.
@@ -89,9 +89,10 @@ class OllamaAssistant
     public function __construct(string $apiKey)
     {
         $this->apiKey = $apiKey;
-        $this->setModel("gpt-3.5-turbo");
+        #$this->setModel("gpt-3.5-turbo");
+        $this->setModel("llama2");
         #$this->setBaseUrl("https://api.openai.com/v1");
-        $this->setBaseUrl("http://192.168.178.3:8085/v1");
+        $this->setBaseUrl("http://langchain:8000");
 
         $this->setLogPath("/usr/src/app/ai_content/openai.log");
         $this->disableLogToFile();
@@ -526,7 +527,8 @@ class OllamaAssistant
 
 
 
-        $endpoint = $this->baseUrl . '/chat/completions';
+        $endpoint = $this->baseUrl . '/ragtest';
+        #$endpoint = $this->baseUrl . '/completion';
 
            
        $aMessages = $this->getMessages($sThread);
@@ -558,6 +560,7 @@ class OllamaAssistant
             "max_tokens" => 512,
             #"stop" => ["\n"],
             "stream" => false,
+            "topic" => "dennis gudelius",
         #    "temperature" => 0.2,
         );
    
@@ -570,10 +573,58 @@ class OllamaAssistant
             #$this->saveMessageToDb( $sThread, "assistant", $sResponse1, $sResponse1, false );
             #return $response;
         }
+
+        if($this->isPLainText($response))
+        {
+            $this->log("plain text response");
+            $this->log($response);
+
+            $response = $this->convertTextToJsonResponse($response);
+        }
     
 
         return $response;
     }
+
+    public function isPLainText(string $sResponse): bool
+    {
+        $aResponse = json_decode($sResponse, true);
+        if(isset($aResponse['choices'][0]['message']['content']))
+        {
+            return false;
+        }
+        else
+        {
+            if(isset($aResponse['choices']['message']['content']))
+            {
+                $aResponse['choices'][0]['message']['content'] = $aResponse['choices']['message']['content'];
+            }
+            
+        }
+        return true;
+    }
+
+    public function convertTextToJsonResponse(string $sResponse): string
+    {
+        #$aResponse = json_decode($sResponse, true);
+        $sText = $sResponse;
+        $aResponse = array(
+            "choices" => array(
+                array(
+                    "message" => array(
+                        "content" => $sText,
+                    ),
+                ),
+            ),
+        );
+
+        $sReturn = json_encode($aResponse, true);
+        $this->log($sReturn);
+
+        return $sReturn;
+      
+    }
+
 
 
     public function getResponseIsError(string $sResponse): bool
