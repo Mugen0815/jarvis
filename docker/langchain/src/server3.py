@@ -23,6 +23,7 @@ from langchain_community.embeddings import OllamaEmbeddings
 CHROMA_PATH = "chromallama"
 DATA_PATH = os.environ.get('DATA_PATH')
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
+OLLAMA_URL ="http://ollama:11434"
 
 
 
@@ -259,9 +260,9 @@ async def simple_invoke(request: Request) -> Response:
 
     # Search the DB.
     results = db.similarity_search_with_relevance_scores(QUERY_TEXT, k=3)
-    if len(results) == 0 or results[0][1] < 0.7:
-        print(f"Unable to find matching results.")
-        return "Unable to find matching results."
+    #if len(results) == 0 or results[0][1] < 0.7:
+        #print(f"Unable to find matching results.")
+        #return "Unable to find matching results."
 
     context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in results])
     prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
@@ -273,9 +274,28 @@ async def simple_invoke(request: Request) -> Response:
     response_text = model.invoke(prompt)
 
     sources = [doc.metadata.get("source", None) for doc, _score in results]
-    formatted_response = f"Response: {response_text}\nSources: {sources}"
+    #formatted_response = f"Response: {response_text}\nSources: {sources}"
     
-    return formatted_response
+    #formatted_response = requestbody
+    
+    #if(isset($aResponse['choices'][0]['message']['content']))
+    aResponse = {
+        'choices': [
+            {
+                'message': {
+                    'role': 'assistant',
+                    'content': response_text + "\nSources: " + str(sources)
+                }
+            }
+        ]
+    }
+    #formatted_response['choices'].append({"message": {"role": "assistant", "content": response_text + "\nSources: " + str(sources)}})
+    
+    
+    #new_message = {"role": "assistant", "content": response_text + "\nSources: " + str(sources)}
+    #formatted_response['messages'].append(new_message)
+    formatted_response_string = aResponse 
+    return formatted_response_string
 
 
 if __name__ == "__main__":

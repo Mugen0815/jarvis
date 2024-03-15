@@ -9,7 +9,7 @@ from langchain_community.embeddings import OllamaEmbeddings
 
 CHROMA_PATH = "chromallama"
 DATA_PATH = os.environ.get('DATA_PATH')
-OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
+#OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
 
 def main():
     generate_data_store()
