@@ -8,7 +8,6 @@ ARG IMAGE
 LABEL maintainer="Mugen0815 <mugen0815@gmail.com>"
 LABEL description="Docker container for simple-rag"
 
-WORKDIR /app
 
 # Install dependencies
 RUN apt-get update
@@ -27,13 +26,17 @@ RUN pip install --upgrade pip \
        "unstructured[pdf]" \
        faiss-cpu \
        sse_starlette \
-       langserve
+       langserve \
+       langchainhub 
 
 
 # Setup environment
 ENV TZ="UTC" 
 
-COPY src/ /app/
+WORKDIR /app
+
+RUN mkdir -p /usr/src/app
+COPY src/ /usr/src/app
 RUN ls --recursive /app/
 
 

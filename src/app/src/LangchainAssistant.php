@@ -460,12 +460,17 @@ class LangchainAssistant
 
     public function postCompletions(string $sThread, string $sMessage): string
     {
+        /*
             $sSystem = $this->instructions;
+            $sSystem = "";
             $sSystem .= "
+            You are able to make function calls.
             The following functions are available for you to fetch further data to answer user questions, if relevant:
                 ";
-        $sSystem .= json_encode($this->getTools());
+                */
+        $sSystem = json_encode($this->getTools());
          
+        /*
 
             $sSystem .= '
 
@@ -479,55 +484,19 @@ class LangchainAssistant
                     }
                 }
                 ]';
+                */
 
-            $sSystem .= '
-            
-            Make sure, ur response is a valid JSON array.
-            Respond with the json only, no additional text. Not before and not after the json.';
-
-
-            $sSystem = "You are a helpful assistant with access to the following functions. Use them if required -
-            ";
-            $sSystem .= json_encode($this->getTools());
-            $sSystem2 ='{
-                "name": "create_event",
-                "description": "Create a new event in the calendar",
-                "parameters": {
-                  "type": "object",
-                  "properties": {
-                    "title": {
-                      "type": "string",
-                      "description": "The title of the event"
-                    },
-                    "date": {
-                      "type": "string",
-                      "format": "date",
-                      "description": "The date of the event"
-                    },
-                    "time": {
-                      "type": "string",
-                      "format": "time",
-                      "description": "The time of the event"
-                    },
-                    "location": {
-                      "type": "string",
-                      "description": "The location of the event (optional)"
-                    }
-                  },
-                  "required": [
-                    "title",
-                    "date",
-                    "time"
-                  ]
-                }
-              }
-              ';
-
-             # $sSystem = "You are a helpful assistant";
+            #$sSystem .= '
+            #When calling a function, all output must be in valid JSON';
 
 
 
-        $endpoint = $this->baseUrl . '/ragtest';
+
+              #$sSystem = "You are a helpful assistant";
+
+
+
+        $endpoint = $this->baseUrl . '/ragchat/v5';
         #$endpoint = $this->baseUrl . '/completion';
 
            
