@@ -53,7 +53,7 @@ def save_to_chroma(chunks: list[Document]):
     db = Chroma.from_documents(
         #chunks, OpenAIEmbeddings(), persist_directory=CHROMA_PATH # For OpenAI via env var
         #chunks, OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY), persist_directory=CHROMA_PATH # For OpenAI via arg
-        chunks, OllamaEmbeddings(base_url="http://ollama:11434", model="nomic-embed-text"), persist_directory=CHROMA_PATH # For Ollama via arg
+        chunks, OllamaEmbeddings(base_url="http://192.168.65.2:11434", model="nomic-embed-text"), persist_directory=CHROMA_PATH # For Ollama via arg
     )
     db.persist()
     print(f"Saved {len(chunks)} chunks to {CHROMA_PATH}.")

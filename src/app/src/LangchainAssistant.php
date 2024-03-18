@@ -469,7 +469,7 @@ class LangchainAssistant
                 ";
                 */
         $sSystem = json_encode($this->getTools());
-         
+        $sSystem = "[]";
         /*
 
             $sSystem .= '
@@ -492,11 +492,11 @@ class LangchainAssistant
 
 
 
-              #$sSystem = "You are a helpful assistant";
+              $sSystem = "You are a helpful assistant, Your name is Jarvis. Keep your answers short and to the point.";
 
 
 
-        $endpoint = $this->baseUrl . '/ragchat/v5';
+        $endpoint = $this->baseUrl . '/chat';
         #$endpoint = $this->baseUrl . '/completion';
 
            
@@ -526,10 +526,10 @@ class LangchainAssistant
         $data = array(
             "model" => $modelname,
             "messages" => $messages,
-            "max_tokens" => 512,
+           # "max_tokens" => 512,
             #"stop" => ["\n"],
-            "stream" => false,
-            "topic" => "dennis gudelius",
+           # "stream" => false,
+           # "topic" => "dennis gudelius",
         #    "temperature" => 0.2,
         );
    

@@ -27,12 +27,44 @@ import os
 from langchain.vectorstores.chroma import Chroma
 from langchain_community.llms import Ollama
 from langchain_community.embeddings import OllamaEmbeddings
+from langchain import hub 
+from langchain.chains import create_history_aware_retriever
+
+
+
+from pathlib import Path
+from typing import Callable, Union
+from langchain.memory import FileChatMessageHistory
+from langchain_core.chat_history import BaseChatMessageHistory
+from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.runnables.history import RunnableWithMessageHistory
+import re
+
+
+
+
+
 
 CHROMA_PATH = "chromallama"
 DATA_PATH = os.environ.get('DATA_PATH')
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY')
-OLLAMA_URL ="http://ollama:11434"
+OLLAMA_URL ="http://192.168.65.2:11434"
 OLLAMA_MODEL = "calebfahlgren/natural-functions"
+OLLAMA_MODEL = "llama2"
+
+llm = Ollama(base_url=OLLAMA_URL, model=OLLAMA_MODEL)
+embedding_function = OllamaEmbeddings(base_url=OLLAMA_URL, model="nomic-embed-text")
+db = Chroma(persist_directory=CHROMA_PATH, embedding_function=embedding_function)
+retriever = db.as_retriever()
+app = FastAPI(
+    title="LangChain Server",
+    version="1.0",
+    description="Spin up a simple api server using Langchain's Runnable interfaces",
+)
+
+
+######################################################################################
+
 
 _TEMPLATE = """Given the following conversation and a follow up question, rephrase the 
 follow up question to be a standalone question, in its original language.
@@ -158,6 +190,38 @@ Answer the question or make a function call: {question}
 """
 
 
+######################################################################################
+
+
+# For conversational_qa_chain
+class ChatHistory(BaseModel):
+    """Chat history with the bot."""
+
+    chat_history: List[Tuple[str, str]] = Field(
+        ...,
+        extra={"widget": {"type": "chat", "input": "question"}},
+    )
+    question: str
+    
+# For chain_with_history
+class InputChat(BaseModel):
+    """Input for the chat endpoint."""
+
+    # The field extra defines a chat widget.
+    # As of 2024-02-05, this chat widget is not fully supported.
+    # It's included in documentation to show how it should be specified, but
+    # will not work until the widget is fully supported for history persistence
+    # on the backend.
+    human_input: str = Field(
+        ...,
+        description="The human input to the chat system.",
+        extra={"widget": {"type": "chat", "input": "human_input"}},
+    )
+    
+    
+######################################################################################
+
+
 def _combine_documents(
     docs, document_prompt=DEFAULT_DOCUMENT_PROMPT, document_separator="\n\n"
 ):
@@ -170,64 +234,20 @@ def _format_chat_history(chat_history: List[Tuple]) -> str:
     """Format chat history into a string."""
     buffer = ""
     for dialogue_turn in chat_history:
-        human = "Human: " + dialogue_turn[0]
-        ai = "Assistant: " + dialogue_turn[1]
-        buffer += "\n" + "\n".join([human, ai])
+        if dialogue_turn['role'] == 'user':
+            buffer += "\n" + "\n" + "User: "+ dialogue_turn['content']
+        else:
+            buffer += "\n" + "\n" + "Assistant: "+ dialogue_turn['content']
+        
+        #human = "Human: " + dialogue_turn[0]
+        #ai = "Assistant: " + dialogue_turn[1]
+        #buffer += "\n" + "\n".join([human, ai])
     return buffer
 
 
-
-embedding_function = OllamaEmbeddings(base_url="http://ollama:11434", model="nomic-embed-text")
-db = Chroma(persist_directory=CHROMA_PATH, embedding_function=embedding_function)
-
-retriever = db.as_retriever()
-
-_inputs = RunnableMap(
-    standalone_question=RunnablePassthrough.assign(
-        chat_history=lambda x: _format_chat_history(x["chat_history"])
-    )
-    | CONDENSE_QUESTION_PROMPT
-    | Ollama(base_url=OLLAMA_URL, model=OLLAMA_MODEL)
-    | StrOutputParser(),
-)
-_context = {
-    "context": itemgetter("standalone_question") | retriever | _combine_documents,
-    "question": lambda x: x["standalone_question"],
-}
-
-
-# User input
-class ChatHistory(BaseModel):
-    """Chat history with the bot."""
-
-    chat_history: List[Tuple[str, str]] = Field(
-        ...,
-        extra={"widget": {"type": "chat", "input": "question"}},
-    )
-    question: str
-
-
-conversational_qa_chain = (
-    _inputs | _context | ANSWER_PROMPT | Ollama(base_url=OLLAMA_URL, model=OLLAMA_MODEL) | StrOutputParser()
-)
-chain1 = conversational_qa_chain.with_types(input_type=ChatHistory)
-
-app = FastAPI(
-    title="LangChain Server",
-    version="1.0",
-    description="Spin up a simple api server using Langchain's Runnable interfaces",
-)
-
-#add_routes(app, chain, enable_feedback_endpoint=True)
-
-
-
 def convert_messages_to_chat_history(messages):
-    #if there is a first message with role system, remove it
     messages = [message for message in messages if message['role'] != 'system']
     chat_history = [[message['content'] for message in messages]]
-    #remove last item
-    #chat_history = chat_history[0:-1]
     
     return {'chat_history': chat_history}
 
@@ -259,6 +279,7 @@ def enrich_request(requestbody):
     
     return requestbody
 
+
 def create_json_response(response_text):
     aResponse = {
         'choices': [
@@ -272,14 +293,156 @@ def create_json_response(response_text):
     }
     return aResponse
 
+
 def normalize_scores(scores):
     min_score = min(scores)
     max_score = max(scores)
     return [(score - min_score) / (max_score - min_score) for score in scores]
 
 
+def _is_valid_identifier(value: str) -> bool:
+    """Check if the session ID is in a valid format."""
+    # Use a regular expression to match the allowed characters
+    valid_characters = re.compile(r"^[a-zA-Z0-9-_]+$")
+    return bool(valid_characters.match(value))
 
 
+def create_session_factory(
+    base_dir: Union[str, Path],
+) -> Callable[[str], BaseChatMessageHistory]:
+    base_dir_ = Path(base_dir) if isinstance(base_dir, str) else base_dir
+    if not base_dir_.exists():
+        base_dir_.mkdir(parents=True)
+
+    def get_chat_history(session_id: str) -> FileChatMessageHistory:
+        if not _is_valid_identifier(session_id):
+            raise HTTPException(
+                status_code=400,
+                detail=f"Session ID `{session_id}` is not in a valid format. "
+                "Session ID must only contain alphanumeric characters, "
+                "hyphens, and underscores.",
+            )
+        file_path = base_dir_ / f"{session_id}.json"
+        return FileChatMessageHistory(str(file_path))
+
+    return get_chat_history
+
+
+######################################################################################
+
+
+# Declare a chain
+chatprompt = ChatPromptTemplate.from_messages(
+    [
+        ("system", "You are a helpful, professional assistant named Ultron."),
+        MessagesPlaceholder(variable_name="messages"),
+    ]
+)
+chatchain = chatprompt | llm
+
+
+# Declare a chain with history
+_inputs = RunnableMap(
+    standalone_question=RunnablePassthrough.assign(
+        chat_history=lambda x: _format_chat_history(x["chat_history"])
+    )
+    | CONDENSE_QUESTION_PROMPT
+    | llm
+    | StrOutputParser(),
+)
+_context = {
+    "context": itemgetter("standalone_question") | retriever | _combine_documents,
+    "question": lambda x: x["standalone_question"],
+}
+conversationalqachain = (
+    _inputs | _context | ANSWER_PROMPT | llm | StrOutputParser()
+)
+conversational_qa_chain = conversationalqachain.with_types(input_type=ChatHistory)
+
+
+# Declare a chain with history and session
+chainwithhistoryprompt = ChatPromptTemplate.from_messages(
+    [
+        ("system", "You're an assistant by the name of Bob."),
+        MessagesPlaceholder(variable_name="history"),
+        ("human", "{human_input}"),
+    ]
+)
+
+chainwithhistory = chainwithhistoryprompt | llm
+
+chain_with_history = RunnableWithMessageHistory(
+    chainwithhistory,
+    create_session_factory("chat_histories"),
+    input_messages_key="human_input",
+    history_messages_key="history",
+).with_types(input_type=InputChat)
+
+
+
+
+
+
+
+@app.post("/summerize", include_in_schema=False)
+async def simple_invoke(request: Request) -> Response:
+    """Handle a request."""
+    requestbody = await request.json()
+    topic = requestbody.get('topic')
+    if topic:
+        text_to_summarize = f"Give me a summary about {topic} in a paragraph or less."
+        result = llm.invoke(text_to_summarize)
+    else:
+        result = "No topic provided"
+    
+    return result
+
+
+@app.post("/chat/v1", include_in_schema=False)
+async def simple_invoke(request: Request) -> Response:
+    """Handle a request."""
+    requestbody = await request.json()
+    messages = requestbody.get('messages')
+    content = messages[-1].get('content')
+    result = llm.invoke(content)
+    
+    return result
+
+
+@app.post("/chat/v2", include_in_schema=True)
+async def simple_invoke(request: Request) -> Response:
+    """Handle a request."""
+    requestbody = await request.json()
+    
+    print(requestbody)
+    print(chatchain)
+    
+    result = chatchain.invoke(requestbody)
+    
+    return result
+
+
+@app.post("/chat/v3", include_in_schema=False)
+async def simple_invoke(request: Request) -> Response:
+    """Handle a request."""
+    requestbody = await request.json()
+    messages = requestbody.get('messages')
+    requestbody['question'] = messages[-1].get('content')
+    requestbody['chat_history'] = messages
+    result = conversational_qa_chain.invoke(requestbody)
+    
+    return result
+
+
+@app.post("/chatwithsession/v1", include_in_schema=True)
+async def simple_invoke(request: Request) -> Response:
+    """Handle a request."""
+    requestbody = await request.json()
+    session_id="test1"
+    human_input = requestbody['messages'][-1]['content']
+    result=chain_with_history.invoke({"human_input": human_input}, {'configurable': { 'session_id': session_id } })
+    
+    return result
 
 
 @app.post("/ragchat/v1", include_in_schema=True)
@@ -288,164 +451,17 @@ async def simple_invoke(request: Request) -> Response:
     requestbody = await request.json()
     
     requestbody = enrich_request(requestbody)
-    QUERY_TEXT = requestbody['input']['question']
-    
-    
-    embedding_function = OllamaEmbeddings(base_url="http://ollama:11434", model="nomic-embed-text")
-    db = Chroma(persist_directory=CHROMA_PATH, embedding_function=embedding_function)
-    results = db.similarity_search_with_relevance_scores(QUERY_TEXT, k=3)
-    print("Results:")
-    if len(results) == 0 or results[0][1] < 0.7:
-        print(f"Unable to find matching results.")
-        #return "Unable to find matching results."
-    else:
-        print(results[0][0])
-
-    context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in results])
-    sources = [doc.metadata.get('source') + ":" + str(doc.metadata.get('start_index')) for doc, _score in results]
-    print(requestbody)
-    
-    response_text = chain1.invoke(requestbody.get("input"))
-    response_text += "\nSources: " + str(sources)
-    formatted_response_string = create_json_response(response_text) 
-    
-    return formatted_response_string
-
-
-
-@app.post("/ragchat/v2", include_in_schema=True)
-async def simple_invoke(request: Request) -> Response:
-    """Handle a request."""
-    requestbody = await request.json()
-    
-    requestbody = enrich_request(requestbody)
-    QUERY_TEXT = requestbody['input']['question']
-  
-    
-    # Prepare the DB.
-    embedding_function = OllamaEmbeddings(base_url="http://ollama:11434", model="nomic-embed-text")
-    db = Chroma(persist_directory=CHROMA_PATH, embedding_function=embedding_function)
-
-    # Search the DB.
-    results = db.similarity_search_with_relevance_scores(QUERY_TEXT, k=3)
-    if len(results) == 0 or results[0][1] < 0.7:
-        print(f"Unable to find matching results.")
-        #return
-
-    context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in results])
-    prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE_BCK)
-    prompt = prompt_template.format(context=context_text, question=QUERY_TEXT)
-    print(prompt)
-
-    model = Ollama(base_url=OLLAMA_URL, model=OLLAMA_MODEL)
-    #response_text = model.predict(prompt)
-    response_text = model.invoke(prompt)
-
-    sources = [doc.metadata.get("source", None) for doc, _score in results]
-    formatted_response = f"Response: {response_text}\nSources: {sources}"
-    
-    formatted_response_string = create_json_response(response_text)
-    
-    return formatted_response_string
-
-
-
-@app.post("/ragchat/v3", include_in_schema=True)
-async def simple_invoke(request: Request) -> Response:
-    """Handle a request."""
-    requestbody = await request.json()
-    
-    requestbody = enrich_request(requestbody)
-    QUERY_TEXT = requestbody['input']['question']
-    messages = requestbody['messages']
-    messages = [message for message in messages if message['role'] != 'system']
-    
-    # Prepare the DB.
-    embedding_function = OllamaEmbeddings(base_url="http://ollama:11434", model="nomic-embed-text")
-    db = Chroma(persist_directory=CHROMA_PATH, embedding_function=embedding_function)
-
-    # Search the DB.
-    results = db.similarity_search_with_relevance_scores(QUERY_TEXT, k=3)
-    if len(results) == 0 or results[0][1] < 0.7:
-        print(f"Unable to find matching results.")
-        #return
-
-    context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in results])
-    prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE_V3)
-    prompt = prompt_template.format(context=context_text, question=QUERY_TEXT, messages=messages)
-    print(prompt)
-
-    model = Ollama(base_url=OLLAMA_URL, model=OLLAMA_MODEL)
-    #response_text = model.predict(prompt)
-    response_text = model.invoke(prompt)
-
-    sources = [doc.metadata.get("source", None) for doc, _score in results]
-    formatted_response = f"Response: {response_text}\nSources: {sources}"
-    
-    formatted_response_string = create_json_response(response_text)
-    
-    return formatted_response_string
-
-
-
-
-@app.post("/ragchat/v4", include_in_schema=True)
-async def simple_invoke(request: Request) -> Response:
-    """Handle a request."""
-    requestbody = await request.json()
-    
-    requestbody = enrich_request(requestbody)
-    QUERY_TEXT = requestbody['input']['question']
+    human_input = requestbody['messages'][-1]['content']
     messages = requestbody['messages']
     systemmessages = [message for message in messages if message['role'] == 'system']
     messages = [message for message in messages if message['role'] != 'system']
     
     # Prepare the DB.
-    embedding_function = OllamaEmbeddings(base_url="http://ollama:11434", model="nomic-embed-text")
+    embedding_function = OllamaEmbeddings(base_url=OLLAMA_URL, model="nomic-embed-text")
     db = Chroma(persist_directory=CHROMA_PATH, embedding_function=embedding_function)
 
     # Search the DB.
-    results = db.similarity_search_with_relevance_scores(QUERY_TEXT, k=3)
-    if len(results) == 0 or results[0][1] < 0.7:
-        print(f"Unable to find matching results.")
-        #return
-
-    context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in results])
-    prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE_V4)
-    prompt = prompt_template.format(context=context_text, question=QUERY_TEXT, messages=messages , system_message=systemmessages[0]['content'])
-    print(prompt)
-
-    model = Ollama(base_url=OLLAMA_URL, model=OLLAMA_MODEL)
-    #response_text = model.predict(prompt)
-    response_text = model.invoke(prompt)
-
-    sources = [doc.metadata.get("source", None) for doc, _score in results]
-    formatted_response = f"Response: {response_text}\nSources: {sources}"
-    
-    formatted_response_string = create_json_response(response_text)
-    
-    return formatted_response_string
-
-
-
-
-@app.post("/ragchat/v5", include_in_schema=True)
-async def simple_invoke(request: Request) -> Response:
-    """Handle a request."""
-    requestbody = await request.json()
-    
-    requestbody = enrich_request(requestbody)
-    QUERY_TEXT = requestbody['input']['question']
-    messages = requestbody['messages']
-    systemmessages = [message for message in messages if message['role'] == 'system']
-    messages = [message for message in messages if message['role'] != 'system']
-    
-    # Prepare the DB.
-    embedding_function = OllamaEmbeddings(base_url="http://ollama:11434", model="nomic-embed-text")
-    db = Chroma(persist_directory=CHROMA_PATH, embedding_function=embedding_function)
-
-    # Search the DB.
-    results = db.similarity_search_with_relevance_scores(QUERY_TEXT, k=3)
+    results = db.similarity_search_with_relevance_scores(human_input, k=3)
     documents, scores = zip(*results)
     normalized_scores = normalize_scores(scores)
     results = list(zip(documents, normalized_scores))
@@ -457,23 +473,12 @@ async def simple_invoke(request: Request) -> Response:
         context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in results])
         
     context_text = "\n\n---\n\n".join([doc.page_content for doc, _score in results])
-    
-    
     prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE_V5)
-    #remove last message from messages
     messages = messages[0:-1]    
-    
-    prompt = prompt_template.format(context=context_text, question=QUERY_TEXT, messages=messages , system_message=systemmessages[0]['content'])
-    print(prompt)
-
-    model = Ollama(base_url=OLLAMA_URL, model=OLLAMA_MODEL, temperature=0.2, num_ctx=4096, repeat_penalty=1.2)
-    #response_text = model.predict(prompt)
-    response_text = model.invoke(prompt)
-    print(response_text)
-    #remove all <|im_end|> from response_text
+    prompt_ragchat = prompt_template.format(context=context_text, question=QUERY_TEXT, messages=messages , system_message=systemmessages[0]['content'])
+    response_text = llm.invoke(prompt_ragchat)
     response_text = response_text.replace("<|im_end|>", "")
     response_text = response_text.replace(">>>END_CONVERSATION<<<", "")
-    print(response_text)
     
     sources = [doc.metadata.get("source", None) for doc, _score in results]
     sources = ""
@@ -482,7 +487,6 @@ async def simple_invoke(request: Request) -> Response:
     formatted_response_string = create_json_response(response_text)
     
     return formatted_response_string
-
 
 
 

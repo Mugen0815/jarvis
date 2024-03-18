@@ -18,29 +18,51 @@ services:
 #            - ./model:/model
 #        ports:
 #            - '8000:8000'
+#    binollama:
+#        container_name: binollama
+#        build: 
+#            context: ./docker/ollama
+#            dockerfile: Dockerfile
+#        ports:
+#        - 8086:11434
+#        environment:
+#            OLLAMA_ORIGINS: '*' 
+#            NVIDIA_VISIBLE_DEVICES: all
+#        volumes:
+#        - ./models:/root/.ollama/models
+#        deploy:
+#            resources:
+#                reservations:
+#                    devices:
+#                        - driver: nvidia
+#                          device_ids: ['0']
+#                          #count: 1
+#                          capabilities: [gpu]
 
-    ollama:
-        image: ollama/ollama:0.1.29
-        container_name: ollama
-        ports:
-        - 8085:11434
-        volumes:
-        - ./models:/root/.ollama/models
-        environment:
-            OLLAMA_ORIGINS: '*' 
-            #OLLAMA_HOST: "localhost:11434"
-            #OLLAMA_PORT: 11434  
-        deploy:
-            resources:
-                reservations:
-                    devices:
-                        - driver: nvidia
-                          #device_ids: ['0']
-                          count: 1
-                          capabilities: [gpu]
-        #command: "ollama pull calebfahlgren/natural-functions"                  
-        command: 
-            - "serve"
+#   ollama:
+#        image: ollama/ollama:0.1.29
+#        container_name: ollama
+#        ports:
+#        - 8085:11434
+#        volumes:
+#        - ./models:/root/.ollama/models
+#        environment:
+#            OLLAMA_ORIGINS: '*' 
+#            N_GPU_LAYERS : 32
+#            N_CTX : 4096
+#            #OLLAMA_HOST: "localhost:11434"
+#            #OLLAMA_PORT: 11434  
+#        deploy:
+#            resources:
+#                reservations:
+#                    devices:
+#                        - driver: nvidia
+#                          #device_ids: ['0']
+#                          count: 1
+#                          capabilities: [gpu]
+#        #command: "ollama pull calebfahlgren/natural-functions"                  
+#        command: 
+#            - "serve"
 
     mariadb:
         image: mariadb:10.6.4-focal
@@ -99,13 +121,13 @@ services:
         environment:
         - DATA_PATH=${DATA_PATH}
         - OPENAI_API_KEY=${OPENAI_API_KEY}
-        deploy:
-            resources:
-                reservations:
-                    devices:
-                    - driver: nvidia
-                      device_ids: ['0']
-                      capabilities: [gpu]
+        #deploy:
+        #    resources:
+        #        reservations:
+        #            devices:
+        #            - driver: nvidia
+        #              device_ids: ['0']
+        #              capabilities: [gpu]
 
 
     weaviate:
@@ -130,6 +152,15 @@ services:
             DEFAULT_VECTORIZER_MODULE: 'none'
             ENABLE_MODULES: 'text2vec-cohere,text2vec-huggingface,text2vec-palm,text2vec-openai,generative-openai,generative-cohere,generative-palm,ref2vec-centroid,reranker-cohere,qna-openai'
             CLUSTER_HOSTNAME: 'node1'
+
+            # Enables API key authentication.
+            AUTHENTICATION_APIKEY_ENABLED: 'true'
+
+            # List one or more keys, separated by commas. Each key corresponds to a specific user identity below.
+            AUTHENTICATION_APIKEY_ALLOWED_KEYS: 'jane2-secret-key,ian2-secret-key'
+
+            # List one or more user identities, separated by commas. Each identity corresponds to a specific key above.
+            AUTHENTICATION_APIKEY_USERS: 'jane2@doe.com,ian2-smith'            
 volumes:
     weaviate_data:
 #    ai_content:
